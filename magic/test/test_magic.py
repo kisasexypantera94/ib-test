@@ -36,7 +36,7 @@ class TestMagic(TestCase):
         data = [Framework('Django', 'Python', 'full-stack'),
                 Framework('Flask', 'Python', 'micro'),
                 Framework('Rails', 'Ruby', 'full-stack'),
-                Framework('Sinatra', 'Ruby', 't' 'micro'),
+                Framework('Sinatra', 'Ruby', 'micro'),
                 Framework('Zend', 'PHP', 'full-stack'),
                 Framework('Slim', 'PHP', 'micro')]
 
