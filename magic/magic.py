@@ -6,55 +6,73 @@ from typing import *
 
 
 class Magic:
-    __operation = {
-        "__eq": lambda y: lambda x: x == y,
-        "__lt": lambda y: lambda x: x < y,
-        "__lte": lambda y: lambda x: x <= y,
-        "__gte": lambda y: lambda x: x >= y,
-        "__gt": lambda y: lambda x: x > y,
-        "__ne": lambda y: lambda x: x != y,
-        "__in": lambda y: lambda x: x in y,
+    __relations = {
+        "eq": lambda y: lambda x: x == y,
+        "lt": lambda y: lambda x: x < y,
+        "lte": lambda y: lambda x: x <= y,
+        "gte": lambda y: lambda x: x >= y,
+        "gt": lambda y: lambda x: x > y,
+        "ne": lambda y: lambda x: x != y,
+        "in": lambda y: lambda x: x in y,
+        "startswith": lambda y: lambda x: x.startswith(y)
     }
 
-    def __init__(self: Magic, data: Iterable) -> None:
+    def __init__(self: Magic, data: Iterable, predicate: Callable = lambda z: True) -> None:
         self.data = data
-        self.predicate = lambda z: True
+        self.predicate = predicate
 
     def __iter__(self: Magic):
         for x in self.data:
-            if self.predicate(x):
-                yield x
+            try:
+                if self.predicate(x):
+                    yield x
+            except TypeError:
+                pass
 
     def filter_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs)
+        query = self.__parse_query(kwargs) + [m.predicate for m in args]
         folded_query = self.__fold_query(query)
-        self.__update_predicate(operator.and_, folded_query)
-
-        return self
+        return self.__new_magic(operator.and_, folded_query)
 
     def or_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs)
+        query = self.__parse_query(kwargs) + [m.predicate for m in args]
         folded_query = self.__fold_query(query)
-        self.__update_predicate(operator.or_, folded_query)
-
-        return self
+        return self.__new_magic(operator.or_, folded_query)
 
     def not_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs)
+        query = self.__parse_query(kwargs) + [m.predicate for m in args]
         folded_query = self.__fold_query(query)
-        self.__update_predicate(operator.and_, lambda z: not folded_query(z))
-
-        return self
-
-    def __update_predicate(self: Magic, op: Callable, new: Callable) -> None:
-        self.predicate = lambda z, old=self.predicate: op(old(z), new(z))
+        return self.__new_magic(operator.and_, lambda z: not folded_query(z))
 
     def __parse_query(self: Magic, query: dict) -> list:
-        return [self.__get_condition(name, val) for name, val in query.items()] if query is not None else []
+        return [self.__make_function(name, val) for name, val in query.items()]
+
+    def __make_function(self: Magic, name: str, val: object) -> Callable:
+        attributes = name.split("__")
+        relation_with_val = self.__get_relation(attributes[-1], val)
+
+        def foo(obj: object) -> bool:
+            cur = obj
+            for attr in attributes[:-1]:
+                if not attr:
+                    break
+
+                if hasattr(cur, attr):
+                    cur = getattr(cur, attr)
+                else:
+                    return False
+
+            return relation_with_val(cur)
+
+        return foo
+
+    def __get_relation(self: Magic, name: str, val: object) -> Callable:
+        return self.__relations[name](val)
 
     @staticmethod
     def __fold_query(query: list) -> Callable:
         return lambda z: reduce(lambda prev, cur: prev(z) and cur(z), query) if len(query) > 1 else query[0](z)
 
-    def __get_condition(self: Magic, name: str, val: object) -> Callable:
-        return self.__operation[name](val)
+    def __new_magic(self: Magic, op: Callable, new: Callable) -> Magic:
+        new_predicate = lambda z, old=self.predicate: op(old(z), new(z))
+        return Magic(self.data, new_predicate)
