@@ -34,7 +34,7 @@ class TestMagic(TestCase):
 
     def test_multiple_attributes(self):
         data = [Framework('Django', 'Python', 'full-stack'),
-                Framework('Flask', 'Python', 'micro'),
+                "У этого объекта нет аттрибута `framework`",
                 Framework('Rails', 'Ruby', 'full-stack'),
                 Framework('Sinatra', 'Ruby', 'micro'),
                 Framework('Zend', 'PHP', 'full-stack'),
