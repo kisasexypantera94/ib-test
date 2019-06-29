@@ -30,21 +30,23 @@ class Magic:
                 pass
 
     def filter_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs) + [m.predicate for m in args]
-        folded_query = self.__fold_query(query)
-        return self.__new_magic(operator.and_, folded_query)
+        predicate_from_query = self.__process_query(args, kwargs)
+        return self.__new_magic(operator.and_, predicate_from_query)
 
     def or_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs) + [m.predicate for m in args]
-        folded_query = self.__fold_query(query)
-        return self.__new_magic(operator.or_, folded_query)
+        predicate_from_query = self.__process_query(args, kwargs)
+        return self.__new_magic(operator.or_, predicate_from_query)
 
     def not_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
-        query = self.__parse_query(kwargs) + [m.predicate for m in args]
-        folded_query = self.__fold_query(query)
-        return self.__new_magic(operator.and_, lambda z: not folded_query(z))
+        predicate_from_query = self.__process_query(args, kwargs)
+        return self.__new_magic(operator.and_, lambda z: not predicate_from_query(z))
 
-    def __parse_query(self: Magic, query: dict) -> List[Callable[bool]]:
+    def __process_query(self: Magic, predicates: Tuple[Magic], conditions: Dict[str, object]) -> Callable[bool]:
+        query = self.__parse_query(conditions) + [m.predicate for m in predicates]
+        folded_query = self.__fold_query(query)
+        return folded_query
+
+    def __parse_query(self: Magic, query: Dict[str, object]) -> List[Callable[bool]]:
         return [self.__make_function(name, val) for name, val in query.items()]
 
     def __make_function(self: Magic, name: str, val: object) -> Callable[bool]:
