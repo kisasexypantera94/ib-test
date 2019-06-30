@@ -54,8 +54,8 @@ class Magic:
         attributes = name.split("__")
         relation_with_y = self.__get_relation(attributes[-1], y)
 
-        def f(obj: object) -> bool:
-            cur = obj
+        def f(x: object) -> bool:
+            cur = x
             for attr in attributes[:-1]:
                 if not attr:
                     break
