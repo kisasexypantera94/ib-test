@@ -17,7 +17,7 @@ class Magic:
         "startswith": lambda y: lambda x: x.startswith(y)
     }
 
-    def __init__(self: Magic, data: Iterable, predicate: Callable[bool] = lambda z: True) -> None:
+    def __init__(self: Magic, data: Iterable, predicate: Callable[bool] = lambda x: True) -> None:
         self.data = data
         self.predicate = predicate
 
@@ -39,7 +39,7 @@ class Magic:
 
     def not_(self: Magic, *args: Magic, **kwargs: object) -> Magic:
         predicate_from_query = self.__process_query(args, kwargs)
-        return self.__new_magic(operator.and_, lambda z: not predicate_from_query(z))
+        return self.__new_magic(operator.and_, lambda x: not predicate_from_query(x))
 
     def __process_query(self: Magic, predicates: Tuple[Magic], conditions: Dict[str, object]) -> Callable[bool]:
         query = self.__parse_query(conditions) + [m.predicate for m in predicates]
@@ -47,14 +47,14 @@ class Magic:
         return folded_query
 
     def __parse_query(self: Magic, query: Dict[str, object]) -> List[Callable[bool]]:
-        return [self.__make_function(name, val) for name, val in query.items()]
+        return [self.__make_function(name, y) for name, y in query.items()]
 
-    def __make_function(self: Magic, name: str, val: object) -> Callable[bool]:
+    def __make_function(self: Magic, name: str, y: object) -> Callable[bool]:
         """Парсинг условия и преобразование его в функцию"""
         attributes = name.split("__")
-        relation_with_val = self.__get_relation(attributes[-1], val)
+        relation_with_y = self.__get_relation(attributes[-1], y)
 
-        def foo(obj: object) -> bool:
+        def f(obj: object) -> bool:
             cur = obj
             for attr in attributes[:-1]:
                 if not attr:
@@ -65,19 +65,22 @@ class Magic:
                 else:
                     return False
 
-            return relation_with_val(cur)
+            return relation_with_y(cur)
 
-        return foo
+        return f
 
-    def __get_relation(self: Magic, name: str, val: object) -> Callable[bool]:
-        return self.__relations[name](val)
+    def __get_relation(self: Magic, name: str, y: object) -> Callable[bool]:
+        return self.__relations[name](y)
 
     @staticmethod
     def __fold_query(query: List[Callable[bool]]) -> Callable[bool]:
         """Логическое перемножение булевых функций"""
-        return lambda z: reduce(lambda prev, cur: prev(z) and cur(z), query) if len(query) > 1 else query[0](z)
+        return lambda x: reduce(lambda prev, cur: prev(x) and cur(x), query) if len(query) > 1 else query[0](x)
 
     def __new_magic(self: Magic, op: Callable[bool], new: Callable[bool]) -> Magic:
         """Создание обновленного объекта `Magic`"""
-        new_predicate = lambda z, old=self.predicate: op(old(z), new(z))
+
+        def new_predicate(x: object, old: Callable[bool] = self.predicate):
+            return op(old(x), new(x))
+
         return Magic(self.data, new_predicate)
