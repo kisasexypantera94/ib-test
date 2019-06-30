@@ -75,7 +75,14 @@ class Magic:
     @staticmethod
     def __fold_query(query: List[Callable[bool]]) -> Callable[bool]:
         """Логическое перемножение булевых функций"""
-        return lambda x: reduce(lambda prev, cur: prev(x) and cur(x), query) if len(query) > 1 else query[0](x)
+
+        def folded_query(x: object):
+            if len(query) == 1:
+                return query[0](x)
+
+            return reduce(lambda prev, cur: prev(x) and cur(x), query)
+
+        return folded_query
 
     def __new_magic(self: Magic, op: Callable[bool], new: Callable[bool]) -> Magic:
         """Создание обновленного объекта `Magic`"""
