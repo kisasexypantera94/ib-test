@@ -1,10 +1,9 @@
-# ib-test
+# django-like-queryset
 
-## Описание
-Объект `Magic` накапливает предикат в виде функции, которая вызывается
-лишь на этапе итерации.
+## About
+QuerySet implementation in django like style. The `Magic` object accumulates a predicate in the form of a function that is called only at the stage of iteration.
 
-## Запуск
+## Running
 ```
 $ python3 -m unittest magic/test/test_magic.py
 
